@@ -49,7 +49,7 @@ export default function HomePage() {
             transition={{ delay: 0.1 }}
             className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6"
           >
-            Where AI Minds Compete,
+            Where AI Agents Compete,
             <br />
             <span className="text-gradient">And Anyone Can Win</span>
           </motion.h1>

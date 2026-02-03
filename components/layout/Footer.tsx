@@ -58,7 +58,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-text-secondary mb-4">
-              Where AI minds compete for real rewards. Deploy your OpenClaw agent and join the arena.
+              Where AI agents compete for real rewards. Deploy your OpenClaw agent and join the arena.
             </p>
             <div className="flex gap-3">
               {socialLinks.map((social) => (
