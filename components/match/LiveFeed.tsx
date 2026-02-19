@@ -51,6 +51,9 @@ export function LiveFeed({ messages, agent1Id, agent2Id, autoScroll = true }: Li
     if (message.messageType === 'system') {
       return 'border-l-accent-yellow bg-accent-yellow/5';
     }
+    if (message.messageType === 'chat' && message.agentId !== agent1Id && message.agentId !== agent2Id) {
+      return 'border-l-accent-cyan bg-accent-cyan/5';
+    }
     if (message.agentId === agent1Id) {
       return 'border-l-blue-500 bg-blue-500/5';
     }
@@ -64,6 +67,7 @@ export function LiveFeed({ messages, agent1Id, agent2Id, autoScroll = true }: Li
       case 'reject': return '❌ Reject';
       case 'counter': return '↩️ Counter';
       case 'system': return '📢 System';
+      case 'chat': return '💬 Chat';
       default: return null;
     }
   };

@@ -133,6 +133,12 @@ export function getStatusInfo(status: string): { label: string; color: string; b
         color: 'text-accent-primary', 
         bgColor: 'bg-accent-primary/10 border-accent-primary/30' 
       };
+    case 'cancelled':
+      return {
+        label: 'CANCELLED',
+        color: 'text-text-muted',
+        bgColor: 'bg-bg-tertiary border-border',
+      };
     default:
       return { 
         label: status, 

@@ -9,25 +9,10 @@ import { useUserStore } from '@/stores/userStore';
 import { truncateAddress, formatUSDC } from '@/lib/utils';
 
 export function WalletModal() {
-  const { isWalletModalOpen, setWalletModalOpen, setWalletAddress, setBalance, balance, walletAddress } = useUserStore();
-  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { isWalletModalOpen, setWalletModalOpen, balance, walletAddress } = useUserStore();
+  const { ready, authenticated, login, logout } = usePrivy();
 
-  // Sync Privy auth state with our store
-  useEffect(() => {
-    if (ready && authenticated && user?.wallet?.address) {
-      setWalletAddress(user.wallet.address);
-      // In a real app, you'd fetch the actual balance from the blockchain
-      // For now, we'll set a demo balance
-      if (balance === 0) {
-        setBalance(100); // Demo balance
-      }
-    } else if (ready && !authenticated) {
-      setWalletAddress(null);
-      setBalance(0);
-    }
-  }, [ready, authenticated, user, setWalletAddress, setBalance, balance]);
-
-  // Close modal when authenticated
+  // Close modal after successful login
   useEffect(() => {
     if (authenticated) {
       setWalletModalOpen(false);
@@ -78,7 +63,7 @@ export function WalletModal() {
             <div className="flex items-center justify-between p-6 border-b border-border">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <Wallet className="w-5 h-5" />
-                {authenticated ? 'Wallet' : 'Connect Wallet'}
+                {authenticated ? 'Wallet' : 'Login'}
               </h2>
               <button
                 onClick={() => setWalletModalOpen(false)}
@@ -112,12 +97,12 @@ export function WalletModal() {
                   {/* Actions */}
                   <div className="space-y-3">
                     <a
-                      href={`https://basescan.org/address/${walletAddress}`}
+                      href={`https://solscan.io/account/${walletAddress}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 p-3 bg-bg-tertiary hover:bg-bg-secondary rounded-xl transition-colors text-sm"
                     >
-                      View on BaseScan
+                      View on Solscan
                       <ExternalLink className="w-4 h-4" />
                     </a>
                     <Button
@@ -137,7 +122,7 @@ export function WalletModal() {
                       <Wallet className="w-8 h-8 text-text-muted" />
                     </div>
                     <p className="text-text-secondary">
-                      Connect your wallet to place predictions and earn rewards.
+                      Login to place predictions and earn rewards.
                     </p>
                   </div>
 
@@ -148,13 +133,12 @@ export function WalletModal() {
                     onClick={handleConnect}
                     disabled={!ready}
                   >
-                    {ready ? 'Connect Wallet' : 'Loading...'}
+                    {ready ? 'Login' : 'Loading...'}
                   </Button>
 
                   {/* Info */}
                   <div className="text-center text-xs text-text-muted">
-                    <p>Supports Coinbase Wallet, MetaMask, and more.</p>
-                    <p>Powered by Privy on Base Network.</p>
+                    <p>Powered by Privy on Solana.</p>
                   </div>
                 </div>
               )}

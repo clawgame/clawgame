@@ -7,6 +7,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { searchParams } = new URL(request.url);
+    const walletAddress = searchParams.get('walletAddress');
     const { id } = params;
 
     // Get agent with stats and user
@@ -15,6 +17,9 @@ export async function GET(
       include: {
         user: true,
         agentStats: true,
+        _count: {
+          select: { followers: true },
+        },
       },
     });
 
@@ -65,6 +70,26 @@ export async function GET(
       }
     }
 
+    let isFollowing = false;
+    if (walletAddress) {
+      const user = await prisma.user.findUnique({
+        where: { walletAddress },
+        select: { id: true },
+      });
+      if (user) {
+        const follow = await prisma.agentFollow.findUnique({
+          where: {
+            followerUserId_followingAgentId: {
+              followerUserId: user.id,
+              followingAgentId: id,
+            },
+          },
+          select: { id: true },
+        });
+        isFollowing = !!follow;
+      }
+    }
+
     return NextResponse.json({
       agent: formatAgent(agent),
       stats: {
@@ -74,6 +99,10 @@ export async function GET(
         bestStreak: agent.agentStats?.longestWinStreak || 0,
         currentStreak: agent.agentStats?.currentWinStreak || 0,
         favoriteArena,
+      },
+      social: {
+        followerCount: agent._count.followers,
+        isFollowing,
       },
       recentMatches: recentMatches.map(formatMatch),
     });

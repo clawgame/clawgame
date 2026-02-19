@@ -22,9 +22,12 @@ model User {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  agents       Agent[]
-  bets         Bet[]
-  transactions Transaction[]
+  agents             Agent[]
+  bets               Bet[]
+  transactions       Transaction[]
+  notifications      Notification[]
+  follows            AgentFollow[] @relation("FollowByUser")
+  tournamentsCreated Tournament[]
 
   @@index([walletAddress])
 }
@@ -38,6 +41,7 @@ enum AgentStrategy {
   DEFENSIVE
   BALANCED
   CHAOTIC
+  CUSTOM
 }
 
 model Agent {
@@ -45,8 +49,13 @@ model Agent {
   userId      String
   name        String        @unique
   bio         String?
-  strategy    AgentStrategy @default(BALANCED)
-  avatarColor String        @default("#00FF00")
+  strategy       AgentStrategy @default(BALANCED)
+  strategyConfig Json?
+  avatarColor    String        @default("#00FF00")
+
+  // Privy Solana Wallet
+  privyWalletId String?
+  solanaAddress  String?
 
   // Stats
   rating       Int     @default(1500)
@@ -69,11 +78,15 @@ model Agent {
   matchesAsAgent1 Match[]      @relation("Agent1")
   matchesAsAgent2 Match[]      @relation("Agent2")
   wonMatches      Match[]      @relation("Winner")
+  tournamentEntries TournamentEntry[]
+  tournamentsWon Tournament[]   @relation("TournamentWinner")
+  followers      AgentFollow[] @relation("FollowedAgent")
   agentStats      AgentStats?
 
   @@index([userId])
   @@index([rating])
   @@index([name])
+  @@index([solanaAddress])
 }
 
 model AgentStats {
@@ -93,6 +106,10 @@ model AgentStats {
   speedTradeLosses   Int     @default(0)
   speedTradeEarnings Decimal @default(0) @db.Decimal(18, 6)
 
+  bazaarWins     Int     @default(0)
+  bazaarLosses   Int     @default(0)
+  bazaarEarnings Decimal @default(0) @db.Decimal(18, 6)
+
   // Performance metrics
   avgNegotiationRounds Decimal? @db.Decimal(4, 2)
   avgWinMargin         Decimal? @db.Decimal(5, 2)
@@ -111,6 +128,13 @@ model AgentStats {
 
 enum MatchStatus {
   PENDING
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TournamentStatus {
+  OPEN
   LIVE
   COMPLETED
   CANCELLED
@@ -147,6 +171,11 @@ model Match {
   // Spectators
   spectatorCount Int @default(0)
 
+  // Tournament context
+  tournamentId    String?
+  tournamentRound Int?
+  tournamentSlot  Int?
+
   // Timestamps
   scheduledAt DateTime?
   startedAt   DateTime?
@@ -158,6 +187,7 @@ model Match {
   agent1   Agent          @relation("Agent1", fields: [agent1Id], references: [id])
   agent2   Agent?         @relation("Agent2", fields: [agent2Id], references: [id])
   winner   Agent?         @relation("Winner", fields: [winnerId], references: [id])
+  tournament Tournament?  @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
   messages MatchMessage[]
   markets  Market[]
   rounds   RoundHistory[]
@@ -167,6 +197,7 @@ model Match {
   @@index([createdAt])
   @@index([agent1Id])
   @@index([agent2Id])
+  @@index([tournamentId, tournamentRound])
 }
 
 enum MessageType {
@@ -182,6 +213,7 @@ model MatchMessage {
   id         String      @id @default(cuid())
   matchId    String
   agentId    String?
+  senderName String?
   round      Int
   type       MessageType
   content    String
@@ -193,6 +225,57 @@ model MatchMessage {
 
   @@index([matchId])
   @@index([createdAt])
+}
+
+model Tournament {
+  id              String           @id @default(cuid())
+  name            String
+  arena           ArenaType
+  status          TournamentStatus @default(OPEN)
+  maxParticipants Int              @default(8)
+  currentRound    Int              @default(0)
+  winnerId        String?
+  createdByUserId String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  winner    Agent?            @relation("TournamentWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+  createdBy User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  entries   TournamentEntry[]
+  matches   Match[]
+
+  @@index([status, createdAt])
+  @@index([arena, createdAt])
+}
+
+model TournamentEntry {
+  id              String   @id @default(cuid())
+  tournamentId    String
+  agentId         String
+  seed            Int
+  eliminatedRound Int?
+  createdAt       DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  agent      Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, agentId])
+  @@unique([tournamentId, seed])
+  @@index([tournamentId, seed])
+}
+
+model AgentFollow {
+  id               String   @id @default(cuid())
+  followerUserId   String
+  followingAgentId String
+  createdAt        DateTime @default(now())
+
+  follower      User  @relation("FollowByUser", fields: [followerUserId], references: [id], onDelete: Cascade)
+  followingAgent Agent @relation("FollowedAgent", fields: [followingAgentId], references: [id], onDelete: Cascade)
+
+  @@unique([followerUserId, followingAgentId])
+  @@index([followingAgentId])
+  @@index([followerUserId])
 }
 
 model RoundHistory {
@@ -363,6 +446,52 @@ model Transaction {
   @@index([userId])
   @@index([type])
   @@index([createdAt])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+enum NotificationType {
+  MATCH_RESULT
+  BET_SETTLEMENT
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  userId  String
+  type    NotificationType
+  title   String
+  message String
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  matchId  String?
+  betId    String?
+  metadata Json?
+
+  emailStatus      NotificationDeliveryStatus @default(SKIPPED)
+  pushStatus       NotificationDeliveryStatus @default(SKIPPED)
+  emailAttemptedAt DateTime?
+  pushAttemptedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead, createdAt])
+  @@unique([type, userId, matchId])
+  @@unique([type, userId, betId])
 }
 
 // ============================================

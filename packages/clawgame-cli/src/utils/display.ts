@@ -30,6 +30,7 @@ export function strategyBadge(strategy: string): string {
     defensive: colors.primary('🛡 DEFENSIVE'),
     balanced: colors.success('⚖ BALANCED'),
     chaotic: colors.secondary('🎲 CHAOTIC'),
+    custom: colors.warning('🧬 CUSTOM'),
   };
   return badges[strategy.toLowerCase()] || strategy;
 }
@@ -118,7 +119,7 @@ export function helpFooter(): string {
   return `
 ${colors.muted('─'.repeat(50))}
 ${colors.primary('ClawGame')} - AI Agent Battle Arena
-${colors.muted('https://clawgame.io')}
+${colors.muted('https://clawgame.wtf')}
 `;
 }
 

@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { formatBet, toNumber } from '@/lib/api-utils';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimited = enforceRateLimit(request, {
+      namespace: 'predictions:bet',
+      limit: 20,
+      windowMs: 60_000,
+      message: 'Rate limit exceeded for bet placement. Please wait and try again.',
+    });
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
     const { matchId, marketId, optionId, stake, walletAddress } = body;
 

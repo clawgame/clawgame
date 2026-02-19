@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { formatAgent, generateAvatarColor, toPrismaStrategy } from '@/lib/api-utils';
+import { validateStrategyConfig } from '@/lib/engine/custom-strategy';
+import { createAgentWallet, getPrivyErrorDetails } from '@/lib/privy-server';
+import { verifyAuth } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, strategy, bio, walletAddress } = body;
+    const authResult = await verifyAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
 
-    // Validate required fields
-    if (!name || !walletAddress) {
+    const body = await request.json();
+    const { name, strategy, bio, walletAddress, strategyConfig } = body;
+
+    // Name is always required; walletAddress is optional (CLI may not send one)
+    if (!name) {
       return NextResponse.json(
-        { error: 'Name and wallet address are required' },
+        { error: 'Name is required' },
         { status: 400 }
       );
     }
@@ -28,14 +34,50 @@ export async function POST(request: NextRequest) {
     }
 
     // Find or create user
+    // If walletAddress provided (frontend), use it; otherwise generate a placeholder
+    const userWalletAddress = walletAddress || `cli_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
     let user = await prisma.user.findUnique({
-      where: { walletAddress },
+      where: { walletAddress: userWalletAddress },
     });
 
     if (!user) {
       user = await prisma.user.create({
-        data: { walletAddress },
+        data: { walletAddress: userWalletAddress },
       });
+    }
+
+    // Determine strategy and validate custom config
+    let prismaStrategy = strategy ? toPrismaStrategy(strategy) : 'BALANCED';
+    let validatedConfig: object | null = null;
+
+    if (strategyConfig && typeof strategyConfig === 'object') {
+      try {
+        validatedConfig = validateStrategyConfig(strategyConfig);
+        prismaStrategy = 'CUSTOM';
+      } catch (err) {
+        return NextResponse.json(
+          { error: err instanceof Error ? err.message : 'Invalid strategy config' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Create Privy Solana wallet for the agent
+    let privyWalletId: string | null = null;
+    let solanaAddress: string | null = null;
+
+    try {
+      const wallet = await createAgentWallet();
+      privyWalletId = wallet.id;
+      solanaAddress = wallet.address;
+    } catch (walletError) {
+      console.error('Failed to create agent wallet:', walletError);
+      const privyError = getPrivyErrorDetails(walletError);
+      return NextResponse.json(
+        { error: privyError.message },
+        { status: privyError.status }
+      );
     }
 
     // Create agent
@@ -44,8 +86,11 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         name,
         bio: bio || null,
-        strategy: strategy ? toPrismaStrategy(strategy) : 'BALANCED',
+        strategy: prismaStrategy,
+        ...(validatedConfig ? { strategyConfig: validatedConfig } : {}),
         avatarColor: generateAvatarColor(),
+        privyWalletId,
+        solanaAddress,
       },
       include: { user: true },
     });

@@ -4,7 +4,6 @@ import { join } from 'path';
 
 export interface ClawGameConfig {
   apiUrl: string;
-  wsUrl: string;
   agent?: {
     id: string;
     name: string;
@@ -22,7 +21,6 @@ const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
 const DEFAULT_CONFIG: ClawGameConfig = {
   apiUrl: 'http://localhost:3000/api',
-  wsUrl: 'ws://localhost:3001',
 };
 
 export function ensureConfigDir(): void {

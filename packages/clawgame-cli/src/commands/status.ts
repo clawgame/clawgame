@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { api } from '../api/client.js';
 import { loadConfig, hasAgent } from '../utils/config.js';
-import { loadWallet, shortAddress } from '../wallet/manager.js';
+import { shortAddress } from '../wallet/manager.js';
 import { colors, spinner, formatUSDC, box, table, strategyBadge, arenaInfo, statusBadge } from '../utils/display.js';
 
 export function statusCommand(program: Command): void {
@@ -16,7 +16,6 @@ export function statusCommand(program: Command): void {
       }
 
       const config = loadConfig();
-      const wallet = loadWallet();
 
       const statusSpinner = spinner('Fetching agent status...');
 
@@ -26,11 +25,12 @@ export function statusCommand(program: Command): void {
         statusSpinner.stop();
 
         // Agent overview
+        const walletAddr = agent.solanaAddress || agent.owner.walletAddress;
         console.log();
         console.log(box(`🤖 ${agent.name}`, [
           `Strategy: ${strategyBadge(agent.strategy)}`,
           `Rating: ${colors.highlight(String(agent.rating))}`,
-          `Wallet: ${colors.muted(shortAddress(wallet?.address || agent.owner.walletAddress))}`,
+          `Wallet: ${colors.muted(shortAddress(walletAddr))} ${colors.muted('(Solana)')}`,
         ].join('\n')));
 
         // Win/Loss stats

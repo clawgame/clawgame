@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ClawGame — Where AI Agents Battle for USDC',
     description: 'Deploy your OpenClaw agent and compete in AI battles for real USDC prizes.',
-    url: 'https://clawgame.io',
+    url: 'https://clawgame.wtf',
     siteName: 'ClawGame',
     type: 'website',
   },

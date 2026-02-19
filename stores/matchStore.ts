@@ -1,11 +1,20 @@
 import { create } from 'zustand';
 import type { Match, MatchMessage, Market } from '@/types';
 
+export interface OddsHistoryPoint {
+  timestamp: string;
+  odds: number;
+  pool: number;
+}
+
+type MatchOddsHistory = Record<string, Record<string, OddsHistoryPoint[]>>;
+
 interface MatchState {
   // Current match being viewed
   currentMatch: Match | null;
   messages: MatchMessage[];
   markets: Market[];
+  oddsHistory: MatchOddsHistory;
   
   // Live matches for homepage
   liveMatches: Match[];
@@ -33,6 +42,7 @@ const initialState = {
   currentMatch: null,
   messages: [],
   markets: [],
+  oddsHistory: {},
   liveMatches: [],
   featuredMatch: null,
   isLoading: false,
@@ -50,20 +60,76 @@ export const useMatchStore = create<MatchState>((set, get) => ({
     messages: [...state.messages, message],
   })),
 
-  setMarkets: (markets) => set({ markets }),
+  setMarkets: (markets) => set((state) => {
+    const nextHistory: MatchOddsHistory = { ...state.oddsHistory };
 
-  updateMarketOdds: (marketId, option, odds, pool) => set((state) => ({
-    markets: state.markets.map((market) => {
+    for (const market of markets) {
+      const existingMarketHistory = nextHistory[market.id] || {};
+      const nextMarketHistory: Record<string, OddsHistoryPoint[]> = { ...existingMarketHistory };
+
+      for (const option of market.options) {
+        const existing = existingMarketHistory[option.id] || [];
+        if (existing.length > 0) {
+          nextMarketHistory[option.id] = existing;
+          continue;
+        }
+
+        nextMarketHistory[option.id] = [{
+          timestamp: new Date().toISOString(),
+          odds: option.odds,
+          pool: option.pool,
+        }];
+      }
+
+      nextHistory[market.id] = nextMarketHistory;
+    }
+
+    return {
+      markets,
+      oddsHistory: nextHistory,
+    };
+  }),
+
+  updateMarketOdds: (marketId, option, odds, pool) => set((state) => {
+    const updatedMarkets = state.markets.map((market) => {
       if (market.id !== marketId) return market;
+
+      const updatedOptions = market.options.map((opt) => {
+        if (opt.id !== option) return opt;
+        return { ...opt, odds, pool };
+      });
+
+      const nextTotalPool = updatedOptions.reduce((sum, opt) => sum + opt.pool, 0);
+
       return {
         ...market,
-        options: market.options.map((opt) => {
-          if (opt.id !== option) return opt;
-          return { ...opt, odds, pool };
-        }),
+        options: updatedOptions,
+        totalPool: nextTotalPool,
       };
-    }),
-  })),
+    });
+
+    const existingMarketHistory = state.oddsHistory[marketId] || {};
+    const existingOptionHistory = existingMarketHistory[option] || [];
+    const nextOptionHistory = [
+      ...existingOptionHistory,
+      {
+        timestamp: new Date().toISOString(),
+        odds,
+        pool,
+      },
+    ].slice(-30);
+
+    return {
+      markets: updatedMarkets,
+      oddsHistory: {
+        ...state.oddsHistory,
+        [marketId]: {
+          ...existingMarketHistory,
+          [option]: nextOptionHistory,
+        },
+      },
+    };
+  }),
 
   setLiveMatches: (matches) => set({ liveMatches: matches }),
 

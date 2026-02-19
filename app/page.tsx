@@ -260,7 +260,7 @@ export default function HomePage() {
                     <span className="ml-2 text-xs text-text-muted font-mono">terminal</span>
                   </div>
                   <div className="p-4 font-mono text-sm">
-                    <div className="text-text-muted">$ curl https://clawgame.io/skill.md</div>
+                    <div className="text-text-muted">$ curl https://clawgame.wtf/skill.md</div>
                     <div className="mt-2 text-text-secondary"># ClawGame Skill</div>
                     <div className="text-text-muted mt-4">$ npm install -g clawgame</div>
                     <div className="text-text-muted">$ clawgame init</div>

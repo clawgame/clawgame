@@ -5,6 +5,7 @@ import { TrendingUp, Lock } from 'lucide-react';
 import { Card, Badge } from '@/components/ui';
 import { cn, formatUSDC, formatOdds, formatPercentage } from '@/lib/utils';
 import { useBetSlipStore } from '@/stores/betStore';
+import { useMatchStore, type OddsHistoryPoint } from '@/stores/matchStore';
 import type { Market } from '@/types';
 
 interface MatchMarketsProps {
@@ -14,6 +15,7 @@ interface MatchMarketsProps {
 
 export function MatchMarkets({ markets, matchId }: MatchMarketsProps) {
   const { addSelection, selections } = useBetSlipStore();
+  const oddsHistory = useMatchStore((state) => state.oddsHistory);
 
   const openMarkets = markets.filter(m => m.status === 'open');
   const closedMarkets = markets.filter(m => m.status !== 'open');
@@ -66,6 +68,7 @@ export function MatchMarkets({ markets, matchId }: MatchMarketsProps) {
         <MarketCard
           key={market.id}
           market={market}
+          historyByOption={oddsHistory[market.id]}
           onSelectOption={(option) => handleSelectOption(market, option)}
           isOptionSelected={(optionId) => isSelected(market.id, optionId)}
         />
@@ -82,6 +85,7 @@ export function MatchMarkets({ markets, matchId }: MatchMarketsProps) {
             <MarketCard
               key={market.id}
               market={market}
+              historyByOption={oddsHistory[market.id]}
               disabled
             />
           ))}
@@ -93,12 +97,13 @@ export function MatchMarkets({ markets, matchId }: MatchMarketsProps) {
 
 interface MarketCardProps {
   market: Market;
+  historyByOption?: Record<string, OddsHistoryPoint[]>;
   onSelectOption?: (option: Market['options'][0]) => void;
   isOptionSelected?: (optionId: string) => boolean;
   disabled?: boolean;
 }
 
-function MarketCard({ market, onSelectOption, isOptionSelected, disabled }: MarketCardProps) {
+function MarketCard({ market, historyByOption, onSelectOption, isOptionSelected, disabled }: MarketCardProps) {
   return (
     <Card className={cn('overflow-hidden', disabled && 'opacity-60')}>
       <div className="px-4 py-3 bg-bg-tertiary border-b border-border">
@@ -165,6 +170,8 @@ function MarketCard({ market, onSelectOption, isOptionSelected, disabled }: Mark
         })}
       </div>
 
+      <OddsTrendChart market={market} historyByOption={historyByOption} />
+
       <div className="px-4 py-2 border-t border-border bg-bg-tertiary">
         <div className="flex justify-between text-xs text-text-muted">
           <span>Total Pool</span>
@@ -172,5 +179,117 @@ function MarketCard({ market, onSelectOption, isOptionSelected, disabled }: Mark
         </div>
       </div>
     </Card>
+  );
+}
+
+const CHART_COLORS = [
+  'hsl(var(--accent-primary) / 0.95)',
+  'hsl(var(--accent-green) / 0.95)',
+  'hsl(var(--accent-purple) / 0.95)',
+  'hsl(var(--accent-yellow) / 0.95)',
+];
+
+interface OddsTrendChartProps {
+  market: Market;
+  historyByOption?: Record<string, OddsHistoryPoint[]>;
+}
+
+function OddsTrendChart({ market, historyByOption }: OddsTrendChartProps) {
+  const width = 260;
+  const height = 72;
+  const padding = 8;
+  const series = market.options.map((option, index) => {
+    const rawPoints = (historyByOption?.[option.id] || []).slice(-20);
+    const points = rawPoints.length > 0
+      ? rawPoints
+      : [{ timestamp: market.createdAt, odds: option.odds, pool: option.pool }];
+
+    return {
+      option,
+      color: CHART_COLORS[index % CHART_COLORS.length],
+      points,
+    };
+  });
+
+  const allOdds = series.flatMap((entry) => entry.points.map((point) => point.odds));
+  if (allOdds.length === 0) return null;
+
+  const min = Math.min(...allOdds);
+  const max = Math.max(...allOdds);
+  const span = max - min || 1;
+  const drawableWidth = width - padding * 2;
+  const drawableHeight = height - padding * 2;
+
+  const toPath = (points: OddsHistoryPoint[]) => {
+    if (points.length === 1) {
+      const y = height - padding - ((points[0].odds - min) / span) * drawableHeight;
+      return `M ${padding} ${y} L ${width - padding} ${y}`;
+    }
+
+    return points
+      .map((point, index) => {
+        const x = padding + (index / (points.length - 1)) * drawableWidth;
+        const y = height - padding - ((point.odds - min) / span) * drawableHeight;
+        return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+      })
+      .join(' ');
+  };
+
+  return (
+    <div className="px-4 py-3 border-t border-border bg-bg-secondary/40">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] uppercase tracking-wide text-text-muted">Odds Trend</span>
+        <span className="text-[11px] text-text-muted">Live updates</span>
+      </div>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-[72px]"
+        role="img"
+        aria-label={`${market.name} odds trend`}
+      >
+        <rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          rx={8}
+          fill="hsl(var(--bg-tertiary) / 0.6)"
+        />
+        {series.map((entry) => (
+          <path
+            key={entry.option.id}
+            d={toPath(entry.points)}
+            fill="none"
+            stroke={entry.color}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </svg>
+      <div className="mt-2 grid gap-1">
+        {series.map((entry) => {
+          const first = entry.points[0]?.odds || entry.option.odds;
+          const last = entry.points[entry.points.length - 1]?.odds || entry.option.odds;
+          const delta = last - first;
+          const deltaLabel = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
+
+          return (
+            <div key={`${entry.option.id}-legend`} className="flex items-center justify-between text-[11px]">
+              <span className="inline-flex items-center gap-2 text-text-muted">
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                {entry.option.name}
+              </span>
+              <span className={cn(delta >= 0 ? 'text-accent-green' : 'text-accent-red')}>
+                {deltaLabel}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

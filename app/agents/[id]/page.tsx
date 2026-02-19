@@ -13,11 +13,14 @@ import {
   Zap,
   ExternalLink,
   Copy,
-  Check
+  Check,
+  UserPlus,
+  UserMinus
 } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui';
 import { AgentAvatar, MatchCard } from '@/components/match';
-import { useAgent, useLiveMatches } from '@/hooks';
+import { useAgent, useLiveMatches, useToggleFollowAgent } from '@/hooks';
+import { useUserStore } from '@/stores/userStore';
 import {
   formatUSDC,
   formatPercentage,
@@ -34,8 +37,10 @@ interface PageProps {
 
 export default function AgentPage({ params }: PageProps) {
   const { id } = params;
+  const walletAddress = useUserStore((state) => state.walletAddress);
   const { data: agentData, isLoading, error } = useAgent(id);
   const { data: matches } = useLiveMatches();
+  const toggleFollow = useToggleFollowAgent();
   const [copied, setCopied] = useState(false);
 
   // Find matches this agent is in
@@ -75,7 +80,8 @@ export default function AgentPage({ params }: PageProps) {
     );
   }
 
-  const { agent, stats } = agentData;
+  const { agent, stats, social } = agentData;
+  const displayWalletAddress = agent.solanaAddress || agent.walletAddress;
   const winRate = calculateWinRate(agent.wins, agent.losses);
 
   const getStrategyInfo = (strategy?: string) => {
@@ -172,11 +178,11 @@ export default function AgentPage({ params }: PageProps) {
                   </div>
 
                   <button
-                    onClick={() => handleCopyAddress(agent.walletAddress)}
+                    onClick={() => handleCopyAddress(displayWalletAddress)}
                     className="flex items-center gap-2 px-3 py-1 bg-bg-tertiary rounded-lg hover:bg-bg-secondary transition-colors"
                   >
                     <span className="font-mono text-text-muted">
-                      {truncateAddress(agent.walletAddress)}
+                      {truncateAddress(displayWalletAddress)}
                     </span>
                     {copied ? (
                       <Check className="w-3 h-3 text-accent-primary" />
@@ -186,14 +192,39 @@ export default function AgentPage({ params }: PageProps) {
                   </button>
 
                   <a
-                    href={`https://basescan.org/address/${agent.walletAddress}`}
+                    href={`https://solscan.io/account/${displayWalletAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-accent-primary hover:underline"
                   >
-                    <span>BaseScan</span>
+                    <span>Solscan</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
+                </div>
+
+                <div className="mt-4 flex items-center justify-center md:justify-start gap-3">
+                  <Button
+                    size="sm"
+                    variant={social?.isFollowing ? 'secondary' : 'primary'}
+                    onClick={() => toggleFollow.mutate({ agentId: id, follow: !social?.isFollowing })}
+                    disabled={!walletAddress}
+                    isLoading={toggleFollow.isPending}
+                  >
+                    {social?.isFollowing ? (
+                      <>
+                        <UserMinus className="w-4 h-4" />
+                        Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                  <span className="text-xs text-text-muted">
+                    {social?.followerCount || 0} followers
+                  </span>
                 </div>
               </div>
             </div>

@@ -11,6 +11,7 @@ interface UserState {
   
   // User's agents
   agents: Agent[];
+  activeAgentId: string | null;
   
   // User's bets
   activeBets: Bet[];
@@ -20,11 +21,13 @@ interface UserState {
   isWalletModalOpen: boolean;
   
   // Actions
+  setAuthenticated: (isAuthenticated: boolean) => void;
   setUser: (user: User | null) => void;
   setWalletAddress: (address: string | null) => void;
   setBalance: (balance: number) => void;
   setAgents: (agents: Agent[]) => void;
   addAgent: (agent: Agent) => void;
+  setActiveAgentId: (agentId: string | null) => void;
   setActiveBets: (bets: Bet[]) => void;
   addBet: (bet: Bet) => void;
   updateBet: (betId: string, updates: Partial<Bet>) => void;
@@ -39,6 +42,7 @@ const initialState = {
   walletAddress: null,
   balance: 0,
   agents: [],
+  activeAgentId: null,
   activeBets: [],
   betHistory: [],
   isWalletModalOpen: false,
@@ -49,26 +53,49 @@ export const useUserStore = create<UserState>()(
     (set, get) => ({
       ...initialState,
 
-      setUser: (user) => set({ 
-        user, 
+      setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
+
+      setUser: (user) => set({
+        user,
         isAuthenticated: !!user,
         walletAddress: user?.walletAddress || null,
         balance: user?.balance || 0,
         agents: user?.agents || [],
+        activeAgentId: user?.agents?.[0]?.id || null,
       }),
 
-      setWalletAddress: (address) => set({ 
-        walletAddress: address,
-        isAuthenticated: !!address,
-      }),
+      setWalletAddress: (address) => set({ walletAddress: address }),
 
       setBalance: (balance) => set({ balance }),
 
-      setAgents: (agents) => set({ agents }),
+      setAgents: (agents) => set((state) => {
+        const keepCurrent = state.activeAgentId && agents.some((agent) => agent.id === state.activeAgentId);
+        return {
+          agents,
+          activeAgentId: keepCurrent ? state.activeAgentId : (agents[0]?.id || null),
+        };
+      }),
 
       addAgent: (agent) => set((state) => ({
         agents: [...state.agents, agent],
+        activeAgentId: state.activeAgentId || agent.id,
       })),
+
+      setActiveAgentId: (agentId) => set((state) => {
+        const nextAgentId = agentId || null;
+
+        if (nextAgentId === null) {
+          if (state.activeAgentId === null) return state;
+          return { activeAgentId: null };
+        }
+
+        const exists = state.agents.some((agent) => agent.id === nextAgentId);
+        if (!exists || state.activeAgentId === nextAgentId) {
+          return state;
+        }
+
+        return { activeAgentId: nextAgentId };
+      }),
 
       setActiveBets: (bets) => set({ activeBets: bets }),
 
@@ -92,7 +119,9 @@ export const useUserStore = create<UserState>()(
     {
       name: 'clawgame-user',
       partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
         walletAddress: state.walletAddress,
+        activeAgentId: state.activeAgentId,
       }),
     }
   )

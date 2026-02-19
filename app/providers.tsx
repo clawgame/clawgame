@@ -2,13 +2,26 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PrivyProvider } from '@privy-io/react-auth';
+import { toSolanaWalletConnectors } from '@privy-io/react-auth/solana';
 import { useState } from 'react';
 import { Toaster } from 'sonner';
-import { WalletModal } from '@/components/wallet';
-import { base } from 'viem/chains';
+import { WalletModal, AuthSync, ServiceWorkerCleanup } from '@/components/wallet';
 
-// Privy App ID - should be in env variables in production
-const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'clawgame-demo';
+function getPrivyAppId(): string {
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+
+  if (!appId) {
+    throw new Error('Missing NEXT_PUBLIC_PRIVY_APP_ID environment variable.');
+  }
+
+  return appId;
+}
+
+const PRIVY_APP_ID = getPrivyAppId();
+
+const solanaConnectors = toSolanaWalletConnectors({
+  shouldAutoConnect: true,
+});
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -32,21 +45,28 @@ export function Providers({ children }: { children: React.ReactNode }) {
           theme: 'dark',
           accentColor: '#00ff88',
           logo: '/logo.png',
+          walletChainType: 'solana-only',
         },
         // Login methods
         loginMethods: ['wallet', 'email'],
-        // Default chain
-        defaultChain: base,
-        // Supported chains
-        supportedChains: [base],
-        // Embedded wallets
+        // Solana cluster
+        solanaClusters: [{ name: 'mainnet-beta' }],
+        // External wallet connectors (Phantom, Solflare, etc.)
+        externalWallets: {
+          solana: {
+            connectors: solanaConnectors,
+          },
+        },
+        // Embedded wallets — auto-create for all users on login
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
+          createOnLogin: 'all-users',
         },
       }}
     >
       <QueryClientProvider client={queryClient}>
         {children}
+        <ServiceWorkerCleanup />
+        <AuthSync />
         <WalletModal />
         <Toaster
           position="bottom-right"

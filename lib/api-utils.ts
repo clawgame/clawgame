@@ -6,12 +6,15 @@ import type {
   MarketOption as PrismaMarketOption,
   Bet as PrismaBet,
   MatchMessage as PrismaMatchMessage,
+  Notification as PrismaNotification,
   AgentStrategy,
   ArenaType,
   MatchStatus,
   MarketStatus,
   MessageType,
-  BetStatus
+  BetStatus,
+  NotificationType as PrismaNotificationType,
+  NotificationDeliveryStatus as PrismaNotificationDeliveryStatus
 } from '@prisma/client';
 import type {
   Agent,
@@ -20,6 +23,7 @@ import type {
   MarketOption,
   Bet,
   MatchMessage,
+  Notification,
   RankedAgent,
   ArenaType as FrontendArenaType,
   MatchStatus as FrontendMatchStatus
@@ -91,13 +95,14 @@ const matchStatusMap: Record<MatchStatus, FrontendMatchStatus> = {
   PENDING: 'pending',
   LIVE: 'live',
   COMPLETED: 'completed',
-  CANCELLED: 'completed', // Map cancelled to completed for frontend
+  CANCELLED: 'cancelled',
 };
 
 const reverseMatchStatusMap: Record<string, MatchStatus> = {
   'pending': 'PENDING',
   'live': 'LIVE',
   'completed': 'COMPLETED',
+  'cancelled': 'CANCELLED',
 };
 
 export function toFrontendMatchStatus(status: MatchStatus): FrontendMatchStatus {
@@ -131,15 +136,41 @@ export function toFrontendBetStatus(status: BetStatus): 'pending' | 'won' | 'los
   return betStatusMap[status];
 }
 
+const notificationTypeMap: Record<PrismaNotificationType, 'match_result' | 'bet_settlement'> = {
+  MATCH_RESULT: 'match_result',
+  BET_SETTLEMENT: 'bet_settlement',
+};
+
+const notificationDeliveryStatusMap: Record<
+  PrismaNotificationDeliveryStatus,
+  'pending' | 'sent' | 'failed' | 'skipped'
+> = {
+  PENDING: 'pending',
+  SENT: 'sent',
+  FAILED: 'failed',
+  SKIPPED: 'skipped',
+};
+
+export function toFrontendNotificationType(type: PrismaNotificationType): 'match_result' | 'bet_settlement' {
+  return notificationTypeMap[type];
+}
+
+export function toFrontendNotificationDeliveryStatus(
+  status: PrismaNotificationDeliveryStatus
+): 'pending' | 'sent' | 'failed' | 'skipped' {
+  return notificationDeliveryStatusMap[status];
+}
+
 // =============================================================================
 // Strategy Mapping
 // =============================================================================
 
-const strategyMap: Record<AgentStrategy, 'aggressive' | 'defensive' | 'balanced' | 'chaotic'> = {
+const strategyMap: Record<AgentStrategy, 'aggressive' | 'defensive' | 'balanced' | 'chaotic' | 'custom'> = {
   AGGRESSIVE: 'aggressive',
   DEFENSIVE: 'defensive',
   BALANCED: 'balanced',
   CHAOTIC: 'chaotic',
+  CUSTOM: 'custom',
 };
 
 const reverseStrategyMap: Record<string, AgentStrategy> = {
@@ -147,9 +178,10 @@ const reverseStrategyMap: Record<string, AgentStrategy> = {
   'defensive': 'DEFENSIVE',
   'balanced': 'BALANCED',
   'chaotic': 'CHAOTIC',
+  'custom': 'CUSTOM',
 };
 
-export function toFrontendStrategy(strategy: AgentStrategy): 'aggressive' | 'defensive' | 'balanced' | 'chaotic' {
+export function toFrontendStrategy(strategy: AgentStrategy): 'aggressive' | 'defensive' | 'balanced' | 'chaotic' | 'custom' {
   return strategyMap[strategy];
 }
 
@@ -190,6 +222,8 @@ export function formatAgent(agent: AgentWithUser): Agent {
     avatarColor: agent.avatarColor,
     bio: agent.bio || undefined,
     strategy: toFrontendStrategy(agent.strategy),
+    strategyConfig: agent.strategyConfig as Record<string, unknown> | undefined ?? undefined,
+    solanaAddress: (agent as PrismaAgent & { solanaAddress?: string | null }).solanaAddress || undefined,
     createdAt: agent.createdAt.toISOString(),
   };
 }
@@ -239,6 +273,9 @@ export function formatMatch(match: MatchWithAgents): Match {
     spectatorCount: match.spectatorCount,
     startedAt: match.startedAt?.toISOString() || match.createdAt.toISOString(),
     endedAt: match.endedAt?.toISOString(),
+    tournamentId: match.tournamentId || undefined,
+    tournamentRound: match.tournamentRound || undefined,
+    tournamentSlot: match.tournamentSlot || undefined,
   };
 }
 
@@ -292,12 +329,30 @@ export function formatMatchMessage(
     id: message.id,
     matchId: message.matchId,
     agentId: message.agentId || 'system',
-    agentName: agentName || 'System',
+    agentName: agentName || message.senderName || 'System',
     content: message.content,
     messageType: toFrontendMessageType(message.type),
     round: message.round,
     offerValue: message.offerValue ? toNumber(message.offerValue) : undefined,
     timestamp: message.createdAt.toISOString(),
+  };
+}
+
+export function formatNotification(notification: PrismaNotification): Notification {
+  return {
+    id: notification.id,
+    userId: notification.userId,
+    type: toFrontendNotificationType(notification.type),
+    title: notification.title,
+    message: notification.message,
+    isRead: notification.isRead,
+    readAt: notification.readAt?.toISOString(),
+    matchId: notification.matchId ?? undefined,
+    betId: notification.betId ?? undefined,
+    metadata: (notification.metadata as Record<string, unknown> | null) ?? undefined,
+    emailStatus: toFrontendNotificationDeliveryStatus(notification.emailStatus),
+    pushStatus: toFrontendNotificationDeliveryStatus(notification.pushStatus),
+    createdAt: notification.createdAt.toISOString(),
   };
 }
 

@@ -1,55 +1,81 @@
 import { Command } from 'commander';
 import { api } from '../api/client.js';
 import { loadConfig, hasAgent } from '../utils/config.js';
-import { loadWallet, shortAddress } from '../wallet/manager.js';
+import { shortAddress } from '../wallet/manager.js';
 import { colors, spinner, formatUSDC, box } from '../utils/display.js';
+
+function requireAgent(): string {
+  if (!hasAgent()) {
+    console.error(colors.error('✗ No agent found. Run `clawgame init` first.'));
+    process.exit(1);
+  }
+  return loadConfig().agent!.id;
+}
 
 export function walletCommand(program: Command): void {
   const wallet = program
     .command('wallet')
-    .description('Manage your wallet');
+    .description('Manage your agent wallet (Solana USDC)');
 
-  // Fund wallet
+  // Check balance
   wallet
-    .command('fund')
-    .description('Add funds to your wallet (simulated)')
-    .requiredOption('-a, --amount <amount>', 'Amount to deposit (USDC)')
-    .action(async (options) => {
-      if (!hasAgent()) {
-        console.error(colors.error('✗ No agent found. Run `clawgame init` first.'));
-        process.exit(1);
-      }
-
-      const amount = parseFloat(options.amount);
-      if (isNaN(amount) || amount <= 0) {
-        console.error(colors.error('✗ Invalid amount. Please enter a positive number.'));
-        process.exit(1);
-      }
-
-      if (amount > 10000) {
-        console.error(colors.error('✗ Maximum deposit is $10,000 USDC.'));
-        process.exit(1);
-      }
-
-      const config = loadConfig();
-      const walletInfo = loadWallet();
-
-      if (!walletInfo) {
-        console.error(colors.error('✗ No wallet found. Run `clawgame init` first.'));
-        process.exit(1);
-      }
-
-      const fundSpinner = spinner(`Depositing ${formatUSDC(amount)}...`);
+    .command('balance')
+    .description('Check platform and on-chain balances')
+    .action(async () => {
+      const agentId = requireAgent();
+      const balanceSpinner = spinner('Fetching balances...');
 
       try {
-        const result = await api.fundWallet(config.agent!.id, amount);
-        fundSpinner.succeed('Deposit successful!');
+        const result = await api.getWalletBalance(agentId);
+        balanceSpinner.stop();
+
+        const addr = result.solanaAddress
+          ? shortAddress(result.solanaAddress)
+          : 'No wallet';
 
         console.log();
-        console.log(box('💰 Wallet Funded', [
-          `Deposited: ${formatUSDC(amount)}`,
-          `New Balance: ${formatUSDC(result.balance)}`,
-          `Transaction: ${colors.muted(result.transaction.slice(0, 16))}...`,
+        console.log(box('💰 Wallet Balances', [
+          `Agent:    ${colors.primary(result.agentName)}`,
+          `Address:  ${colors.primary(addr)} ${colors.muted('(Solana)')}`,
+          ``,
+          `${colors.highlight('Platform')}`,
+          `  USDC:   ${formatUSDC(result.balances.platform)}`,
+          ``,
+          `${colors.highlight('On-Chain')}`,
+          `  USDC:   ${formatUSDC(result.balances.onChain.usdc)}`,
+          `  SOL:    ${colors.secondary(result.balances.onChain.sol.toFixed(4) + ' SOL')}`,
+        ].join('\n')));
+
+        if (result.balances.onChain.usdc > 0) {
+          console.log();
+          console.log(colors.muted('Tip: Run `clawgame wallet fund` to move on-chain USDC to your platform balance.'));
+        }
+
+      } catch (error) {
+        balanceSpinner.fail('Failed to fetch balance');
+        if (error instanceof Error) {
+          console.error(colors.error(`\n✗ ${error.message}`));
+        }
+        process.exit(1);
+      }
+    });
+
+  // Fund (sync on-chain deposit to platform balance)
+  wallet
+    .command('fund')
+    .description('Sync on-chain USDC deposits to your platform balance')
+    .action(async () => {
+      const agentId = requireAgent();
+      const fundSpinner = spinner('Checking on-chain USDC and syncing deposit...');
+
+      try {
+        const result = await api.syncDeposit(agentId);
+        fundSpinner.succeed('Deposit synced!');
+
+        console.log();
+        console.log(box('💰 Deposit Complete', [
+          `Deposited:    ${formatUSDC(result.deposited)}`,
+          `New Balance:  ${formatUSDC(result.newPlatformBalance)}`,
         ].join('\n')));
 
         console.log();
@@ -64,38 +90,40 @@ export function walletCommand(program: Command): void {
       }
     });
 
-  // Check balance
+  // Withdraw
   wallet
-    .command('balance')
-    .description('Check your wallet balance')
-    .action(async () => {
-      if (!hasAgent()) {
-        console.error(colors.error('✗ No agent found. Run `clawgame init` first.'));
+    .command('withdraw')
+    .description('Withdraw USDC from platform to a Solana address')
+    .requiredOption('-a, --amount <amount>', 'Amount to withdraw (USDC)')
+    .requiredOption('-t, --to <address>', 'Destination Solana address')
+    .action(async (options) => {
+      const agentId = requireAgent();
+
+      const amount = parseFloat(options.amount);
+      if (isNaN(amount) || amount <= 0) {
+        console.error(colors.error('✗ Invalid amount. Please enter a positive number.'));
         process.exit(1);
       }
 
-      const config = loadConfig();
-      const walletInfo = loadWallet();
-
-      if (!walletInfo) {
-        console.error(colors.error('✗ No wallet found. Run `clawgame init` first.'));
-        process.exit(1);
-      }
-
-      const balanceSpinner = spinner('Fetching balance...');
+      const withdrawSpinner = spinner(`Withdrawing ${formatUSDC(amount)} to ${shortAddress(options.to)}...`);
 
       try {
-        const result = await api.getBalance(config.agent!.id);
-        balanceSpinner.stop();
+        const result = await api.withdraw(agentId, amount, options.to);
+        withdrawSpinner.succeed('Withdrawal complete!');
 
         console.log();
-        console.log(box('💰 Wallet', [
-          `Address: ${colors.primary(shortAddress(walletInfo.address))}`,
-          `Balance: ${formatUSDC(result.balance)}`,
+        console.log(box('💸 Withdrawal Sent', [
+          `Amount:      ${formatUSDC(result.amount)}`,
+          `To:          ${colors.primary(shortAddress(result.destination))}`,
+          `Tx:          ${colors.muted(result.txSignature.slice(0, 24))}...`,
+          `New Balance: ${formatUSDC(result.newBalance)}`,
         ].join('\n')));
 
+        console.log();
+        console.log(`Explorer: ${colors.primary(result.explorerUrl)}`);
+
       } catch (error) {
-        balanceSpinner.fail('Failed to fetch balance');
+        withdrawSpinner.fail('Withdrawal failed');
         if (error instanceof Error) {
           console.error(colors.error(`\n✗ ${error.message}`));
         }
@@ -103,52 +131,35 @@ export function walletCommand(program: Command): void {
       }
     });
 
-  // Show wallet info
+  // Wallet info
   wallet
     .command('info')
     .description('Show wallet details')
-    .option('--show-private-key', 'Show private key (dangerous!)')
-    .action((options) => {
-      const walletInfo = loadWallet();
-
-      if (!walletInfo) {
-        console.error(colors.error('✗ No wallet found. Run `clawgame init` first.'));
-        process.exit(1);
-      }
-
-      console.log();
-      console.log(box('🔐 Wallet Info', [
-        `Address: ${colors.primary(walletInfo.address)}`,
-        options.showPrivateKey
-          ? `Private Key: ${colors.error(walletInfo.privateKey)}`
-          : `Private Key: ${colors.muted('[hidden - use --show-private-key]')}`,
-      ].join('\n')));
-
-      if (options.showPrivateKey) {
-        console.log();
-        console.log(colors.warning('⚠️  Never share your private key with anyone!'));
-      }
-    });
-
-  // Export wallet
-  wallet
-    .command('export')
-    .description('Export wallet private key')
     .action(async () => {
-      const walletInfo = loadWallet();
+      const agentId = requireAgent();
+      const infoSpinner = spinner('Fetching wallet info...');
 
-      if (!walletInfo) {
-        console.error(colors.error('✗ No wallet found. Run `clawgame init` first.'));
+      try {
+        const result = await api.getWalletBalance(agentId);
+        infoSpinner.stop();
+
+        console.log();
+        console.log(box('🔐 Wallet Info', [
+          `Agent:    ${colors.primary(result.agentName)}`,
+          `Chain:    ${colors.highlight('Solana')}`,
+          `Address:  ${colors.primary(result.solanaAddress || 'None')}`,
+          `Type:     ${colors.muted('Privy Server Wallet (managed)')}`,
+          ``,
+          `${colors.muted('This wallet is managed by Privy. No private keys are stored locally.')}`,
+          `${colors.muted('Send USDC-SPL to the address above to fund your agent.')}`,
+        ].join('\n')));
+
+      } catch (error) {
+        infoSpinner.fail('Failed to fetch wallet info');
+        if (error instanceof Error) {
+          console.error(colors.error(`\n✗ ${error.message}`));
+        }
         process.exit(1);
       }
-
-      console.log();
-      console.log(colors.warning('⚠️  WARNING: Never share your private key with anyone!'));
-      console.log(colors.warning('   Anyone with this key can access your funds.'));
-      console.log();
-      console.log(`Address:     ${colors.primary(walletInfo.address)}`);
-      console.log(`Private Key: ${colors.error(walletInfo.privateKey)}`);
-      console.log();
-      console.log(colors.muted('You can import this wallet into MetaMask or any other wallet.'));
     });
 }

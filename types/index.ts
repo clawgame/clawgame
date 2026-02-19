@@ -9,8 +9,15 @@ export interface Agent {
   earnings: number;
   avatarColor: string;
   bio?: string;
-  strategy?: 'aggressive' | 'defensive' | 'balanced' | 'chaotic';
+  strategy?: 'aggressive' | 'defensive' | 'balanced' | 'chaotic' | 'custom';
+  strategyConfig?: Record<string, unknown>;
+  solanaAddress?: string;
   createdAt: string;
+}
+
+export interface AgentSocial {
+  followerCount: number;
+  isFollowing: boolean;
 }
 
 export interface AgentStats {
@@ -24,7 +31,7 @@ export interface AgentStats {
 
 // Match types
 export type ArenaType = 'the-pit' | 'colosseum' | 'speed-trade' | 'bazaar';
-export type MatchStatus = 'pending' | 'live' | 'completed';
+export type MatchStatus = 'pending' | 'live' | 'completed' | 'cancelled';
 
 export interface Match {
   id: string;
@@ -39,6 +46,9 @@ export interface Match {
   spectatorCount: number;
   startedAt: string;
   endedAt?: string;
+  tournamentId?: string;
+  tournamentRound?: number;
+  tournamentSlot?: number;
 }
 
 export interface MatchMessage {
@@ -150,6 +160,26 @@ export interface WSSpectatorsEvent {
   count: number;
 }
 
+// Notification types
+export type NotificationType = 'match_result' | 'bet_settlement';
+export type NotificationDeliveryStatus = 'pending' | 'sent' | 'failed' | 'skipped';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  readAt?: string;
+  matchId?: string;
+  betId?: string;
+  metadata?: Record<string, unknown>;
+  emailStatus: NotificationDeliveryStatus;
+  pushStatus: NotificationDeliveryStatus;
+  createdAt: string;
+}
+
 // User types
 export interface User {
   id: string;
@@ -186,6 +216,67 @@ export interface PlaceBetInput {
 
 export interface RegisterAgentInput {
   name: string;
-  strategy?: string;
+  strategy?: 'aggressive' | 'defensive' | 'balanced' | 'chaotic' | 'custom';
   bio?: string;
+  walletAddress?: string;
+  strategyConfig?: Record<string, unknown>;
+}
+
+// Matchmaking queue types
+export interface MatchQueueInfo {
+  entryId: string;
+  arena: ArenaType;
+  prizePool: number;
+  maxRounds: number;
+  joinedAt: string;
+  position: number;
+}
+
+export interface MatchQueueArenaStats {
+  arena: ArenaType;
+  waiting: number;
+  oldestJoinAt?: string;
+}
+
+export interface MatchQueueStatusResponse {
+  status: 'matched' | 'queued' | 'idle' | 'ok';
+  source?: 'queue' | 'active-match';
+  alreadyQueued?: boolean;
+  matchedWith?: string;
+  estimatedWaitSeconds?: number;
+  queue?: MatchQueueInfo;
+  match?: Match;
+  queues: MatchQueueArenaStats[];
+}
+
+// Tournament types
+export type TournamentStatus = 'open' | 'live' | 'completed' | 'cancelled';
+
+export interface Tournament {
+  id: string;
+  name: string;
+  arena: ArenaType;
+  status: TournamentStatus;
+  maxParticipants: number;
+  participantCount: number;
+  currentRound: number;
+  winner?: { id: string; name: string } | null;
+  createdAt: string;
+  startedAt?: string | null;
+}
+
+export interface TournamentEntry {
+  id: string;
+  seed: number;
+  eliminatedRound?: number | null;
+  agent: Agent;
+}
+
+export interface FollowedAgent {
+  id: string;
+  name: string;
+  rating: number;
+  strategy?: Agent['strategy'];
+  avatarColor: string;
+  followedAt: string;
 }

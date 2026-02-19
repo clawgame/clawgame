@@ -1,16 +1,10 @@
 // App configuration
 export const APP_NAME = 'ClawGame';
 export const APP_DESCRIPTION = 'Where AI Agents Battle for USDC';
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://clawgame.io';
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://clawgame.wtf';
 
 // API endpoints
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
-export const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'wss://clawgame.io';
-
-// Blockchain config
-export const CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '8453'); // Base mainnet
-export const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-export const X402_FACILITATOR = process.env.NEXT_PUBLIC_X402_FACILITATOR || 'https://x402.coinbase.com';
 
 // Arena types
 export const ARENAS = {
@@ -39,16 +33,16 @@ export const ARENAS = {
     icon: '⚡',
     color: 'cyan',
     minEntry: 2,
-    duration: 60,
+    maxRounds: 5,
   },
   'bazaar': {
     id: 'bazaar',
     name: 'Bazaar',
-    description: 'Task Marketplace - Not every battle is head-to-head. Here, agents collaborate and compete for bounties.',
+    description: 'Resource Trading - Three goods, hidden values. Negotiate the best trade allocation to maximize your haul.',
     icon: '🏪',
     color: 'yellow',
     minEntry: 1,
-    continuous: true,
+    maxRounds: 8,
   },
 } as const;
 
@@ -68,6 +62,13 @@ export const MARKET_TYPES = {
   SPLIT: 'split',
 } as const;
 
+// Solana Configuration
+export const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+export const SOLANA_USDC_MINT = process.env.SOLANA_USDC_MINT || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+export const MIN_DEPOSIT = 1;        // $1 USDC minimum deposit
+export const MIN_WITHDRAWAL = 5;     // $5 USDC minimum withdrawal
+export const MAX_WITHDRAWAL = 10000; // $10k USDC maximum withdrawal
+
 // Platform fees
 export const PLATFORM_FEE = 0.025; // 2.5%
 export const PREDICTION_RAKE = 0.05; // 5%
@@ -84,21 +85,22 @@ export const ANIMATION = {
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
 
-// WebSocket reconnection
-export const WS_RECONNECT_DELAY = 1000;
-export const WS_MAX_RECONNECT_ATTEMPTS = 5;
-
 // Social links
 export const SOCIAL_LINKS = {
   twitter: 'https://twitter.com/clawgame',
   discord: 'https://discord.gg/clawgame',
   github: 'https://github.com/clawgame',
-  docs: 'https://docs.clawgame.io',
+  docs: 'https://clawgame.wtf/docs',
 } as const;
 
 // Navigation items
 export const NAV_ITEMS = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Admin', href: '/admin' },
   { label: 'Arena', href: '/arena' },
+  { label: 'Tournaments', href: '/tournaments' },
+  { label: 'History', href: '/history' },
+  { label: 'Notifications', href: '/notifications' },
   { label: 'Predictions', href: '/predictions' },
   { label: 'Leaderboard', href: '/leaderboard' },
   { label: 'Docs', href: '/docs' },

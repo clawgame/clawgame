@@ -1,15 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowLeft, Users, Trophy, Clock, Share2 } from 'lucide-react';
+import { ArrowLeft, Users, Trophy, Clock, Share2, Send } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui';
 import { AgentAvatar, LiveFeed } from '@/components/match';
 import { MatchMarkets } from '@/components/predictions';
 import { BetSlip } from '@/components/predictions/BetSlip';
-import { useMatch } from '@/hooks';
+import { useMatch, usePostMatchChat } from '@/hooks';
 import { formatUSDC, getArenaInfo, getStatusInfo, formatDuration } from '@/lib/utils';
 import { useBetSlipStore } from '@/stores/betStore';
+import { useUserStore } from '@/stores/userStore';
 
 interface PageProps {
   params: { id: string };
@@ -17,7 +19,10 @@ interface PageProps {
 
 export default function MatchPage({ params }: PageProps) {
   const { id } = params;
+  const [chatInput, setChatInput] = useState('');
   const { data, isLoading, error } = useMatch(id);
+  const postChatMutation = usePostMatchChat(id);
+  const walletAddress = useUserStore((state) => state.walletAddress);
   const { selections } = useBetSlipStore();
 
   const match = data?.match;
@@ -67,6 +72,17 @@ export default function MatchPage({ params }: PageProps) {
     }
   };
 
+  const handleSendChat = async () => {
+    const content = chatInput.trim();
+    if (!content) return;
+    try {
+      await postChatMutation.mutateAsync(content);
+      setChatInput('');
+    } catch {
+      // Error surfaced by mutation
+    }
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6">
       <div className="max-w-7xl mx-auto">
@@ -77,6 +93,13 @@ export default function MatchPage({ params }: PageProps) {
             <span>Back to Arena</span>
           </Link>
           <div className="flex items-center gap-3">
+            {match.status === 'completed' && (
+              <Link href={`/match/${match.id}/replay`}>
+                <Button variant="secondary" size="sm">
+                  Replay
+                </Button>
+              </Link>
+            )}
             <Button variant="ghost" size="sm" onClick={handleShare}>
               <Share2 className="w-4 h-4" />
               Share
@@ -186,11 +209,47 @@ export default function MatchPage({ params }: PageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Live Feed - Takes 2 columns */}
           <div className="lg:col-span-2 h-[600px]">
-            <LiveFeed
-              messages={messages}
-              agent1Id={agent1.id}
-              agent2Id={agent2.id}
-            />
+            <div className="h-full flex flex-col gap-4">
+              <div className="flex-1 min-h-0">
+                <LiveFeed
+                  messages={messages}
+                  agent1Id={agent1.id}
+                  agent2Id={agent2.id}
+                />
+              </div>
+              <Card className="p-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(event) => setChatInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleSendChat();
+                      }
+                    }}
+                    placeholder={walletAddress ? 'Say something to spectators...' : 'Connect wallet to chat'}
+                    disabled={!walletAddress || postChatMutation.isPending}
+                    className="flex-1 bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-primary disabled:opacity-60"
+                    maxLength={280}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSendChat}
+                    disabled={!walletAddress || !chatInput.trim()}
+                    isLoading={postChatMutation.isPending}
+                  >
+                    <Send className="w-4 h-4" />
+                    Send
+                  </Button>
+                </div>
+                <div className="mt-2 text-[11px] text-text-muted flex justify-between">
+                  <span>{walletAddress ? 'Live match chat' : 'Login to join chat'}</span>
+                  <span>{chatInput.length}/280</span>
+                </div>
+              </Card>
+            </div>
           </div>
 
           {/* Sidebar - Markets */}

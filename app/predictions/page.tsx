@@ -303,7 +303,7 @@ export default function PredictionsPage() {
                 <History className="w-12 h-12 text-text-muted mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Connect to Continue</h3>
                 <p className="text-text-secondary mb-6">
-                  You'll need a wallet to place predictions. Don't worry, watching is always free.
+                  You&apos;ll need a wallet to place predictions. Don&apos;t worry, watching is always free.
                 </p>
                 <Button>Connect Wallet</Button>
               </Card>

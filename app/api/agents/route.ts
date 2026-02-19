@@ -8,16 +8,18 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search');
+    const walletAddress = searchParams.get('walletAddress');
 
     // Build where clause
-    const where = search
-      ? {
-          name: {
-            contains: search,
-            mode: 'insensitive' as const,
-          },
-        }
-      : {};
+    const where: Record<string, unknown> = {};
+
+    if (search) {
+      where.name = { contains: search, mode: 'insensitive' as const };
+    }
+
+    if (walletAddress) {
+      where.user = { walletAddress };
+    }
 
     // Get agents with user
     const [agents, total] = await Promise.all([

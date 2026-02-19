@@ -13,6 +13,7 @@ export interface Agent {
   earnings: number;
   avatarColor: string;
   bio: string;
+  solanaAddress?: string;
   owner: {
     id: string;
     walletAddress: string;
@@ -34,6 +35,28 @@ export interface Match {
     agent1: number;
     agent2: number;
   };
+}
+
+export interface QueueStatus {
+  status: 'matched' | 'queued' | 'idle' | 'ok';
+  source?: 'queue' | 'active-match';
+  alreadyQueued?: boolean;
+  matchedWith?: string;
+  estimatedWaitSeconds?: number;
+  queue?: {
+    entryId: string;
+    arena: string;
+    prizePool: number;
+    maxRounds: number;
+    joinedAt: string;
+    position: number;
+  };
+  match?: Match;
+  queues: Array<{
+    arena: string;
+    waiting: number;
+    oldestJoinAt?: string;
+  }>;
 }
 
 export interface MatchMessage {
@@ -95,6 +118,44 @@ export interface LeaderboardEntry {
   totalMatches: number;
 }
 
+export interface AgentStats {
+  totalMatches: number;
+  bestStreak: number;
+  currentStreak: number;
+  avgEarningsPerMatch: number;
+  favoriteArena?: string;
+}
+
+// Wallet types
+export interface WalletBalance {
+  agentId: string;
+  agentName: string;
+  solanaAddress: string | null;
+  balances: {
+    platform: number;
+    onChain: {
+      usdc: number;
+      sol: number;
+    };
+  };
+}
+
+export interface DepositResult {
+  success: boolean;
+  deposited: number;
+  newPlatformBalance: number;
+  message: string;
+}
+
+export interface WithdrawResult {
+  success: boolean;
+  amount: number;
+  destination: string;
+  txSignature: string;
+  explorerUrl: string;
+  newBalance: number;
+}
+
 class ApiClient {
   private client: AxiosInstance;
 
@@ -102,7 +163,7 @@ class ApiClient {
     const config = loadConfig();
     this.client = axios.create({
       baseURL: config.apiUrl,
-      timeout: 10000,
+      timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -160,7 +221,7 @@ class ApiClient {
     }
   }
 
-  async getAgent(id: string): Promise<{ agent: Agent; stats: Record<string, number>; recentMatches: Match[] }> {
+  async getAgent(id: string): Promise<{ agent: Agent; stats: AgentStats; recentMatches: Match[] }> {
     try {
       const { data } = await this.client.get(`/agents/${id}`);
       return data;
@@ -173,10 +234,58 @@ class ApiClient {
     name: string;
     strategy: string;
     bio: string;
-    walletAddress: string;
+    walletAddress?: string;
+    strategyConfig?: Record<string, unknown>;
   }): Promise<Agent> {
     try {
       const { data } = await this.client.post('/agents/register', params);
+      return data;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  // Match creation
+  async createMatch(params: { agent1Id: string; arena: string; prizePool: number }): Promise<Match> {
+    try {
+      const { data } = await this.client.post('/matches', params);
+      return data;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  // Match queue
+  async joinMatchQueue(params: {
+    agentId: string;
+    arena: string;
+    prizePool: number;
+    maxRounds?: number;
+  }): Promise<QueueStatus> {
+    try {
+      const { data } = await this.client.post('/matches/queue', params);
+      return data;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  async getMatchQueueStatus(agentId: string, arena?: string): Promise<QueueStatus> {
+    try {
+      const { data } = await this.client.get('/matches/queue', {
+        params: { agentId, arena },
+      });
+      return data;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  async leaveMatchQueue(agentId: string, arena?: string): Promise<{ success: boolean; removed: number }> {
+    try {
+      const { data } = await this.client.delete('/matches/queue', {
+        params: { agentId, arena },
+      });
       return data;
     } catch (error) {
       this.handleError(error);
@@ -238,21 +347,33 @@ class ApiClient {
     }
   }
 
-  // Wallet operations (simulated)
-  async fundWallet(userId: string, amount: number): Promise<{ balance: number; transaction: string }> {
+  // Wallet operations (Privy + Solana)
+  async getWalletBalance(agentId: string): Promise<WalletBalance> {
     try {
-      // This would be a real endpoint in production
-      const { data } = await this.client.post('/wallet/fund', { userId, amount });
+      const { data } = await this.client.get('/wallet/balance', {
+        params: { agentId },
+      });
       return data;
     } catch (error) {
       this.handleError(error);
     }
   }
 
-  async getBalance(userId: string): Promise<{ balance: number }> {
+  async syncDeposit(agentId: string): Promise<DepositResult> {
     try {
-      const { data } = await this.client.get('/wallet/balance', {
-        params: { userId },
+      const { data } = await this.client.post('/wallet/deposit', { agentId });
+      return data;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  async withdraw(agentId: string, amount: number, destinationAddress: string): Promise<WithdrawResult> {
+    try {
+      const { data } = await this.client.post('/wallet/withdraw', {
+        agentId,
+        amount,
+        destinationAddress,
       });
       return data;
     } catch (error) {
