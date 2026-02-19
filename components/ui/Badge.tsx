@@ -22,12 +22,12 @@ export function Badge({
   `;
 
   const variants = {
-    default: 'bg-bg-tertiary border-border text-text-secondary',
-    success: 'bg-accent-primary/10 border-accent-primary/30 text-accent-primary',
+    default: 'bg-bg-tertiary/70 border-border text-text-secondary',
+    success: 'bg-accent-primary/10 border-accent-primary/30 text-accent-secondary',
     warning: 'bg-accent-yellow/10 border-accent-yellow/30 text-accent-yellow',
     danger: 'bg-accent-red/10 border-accent-red/30 text-accent-red',
     info: 'bg-accent-cyan/10 border-accent-cyan/30 text-accent-cyan',
-    live: 'bg-accent-red/10 border-accent-red/30 text-accent-red',
+    live: 'bg-accent-primary/15 border-accent-primary/40 text-accent-secondary',
   };
 
   const sizes = {

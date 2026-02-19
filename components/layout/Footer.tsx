@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Twitter, MessageCircle, Github, FileText } from 'lucide-react';
 import { SOCIAL_LINKS, APP_NAME } from '@/lib/constants';
 
@@ -44,17 +45,25 @@ export function Footer() {
   ];
 
   return (
-    <footer className="bg-bg-secondary border-t border-border">
+    <footer className="bg-bg-secondary/90 border-t border-border relative overflow-hidden">
+      <div className="absolute inset-0 bg-noise pointer-events-none" />
+      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-accent-primary/15 blur-[120px] pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-xl">
-                ⚔️
+              <div className="relative h-10 w-10 rounded-xl bg-bg-elevated border border-accent-primary/40 overflow-hidden shadow-glow-green">
+                <Image
+                  src="/logoclaw.jpg"
+                  alt="ClawGame logo"
+                  fill
+                  sizes="40px"
+                  className="object-contain p-1"
+                />
               </div>
-              <span className="text-xl font-bold">
-                Claw<span className="text-accent-primary">Game</span>
+              <span className="text-xl font-bold font-display tracking-[0.06em] uppercase">
+                Claw<span className="text-gradient">Game</span>
               </span>
             </Link>
             <p className="text-sm text-text-secondary mb-4">

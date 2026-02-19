@@ -2,39 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800;900&family=Share+Tech+Mono&display=swap');
 
 :root {
-  /* Backgrounds */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a25;
-  --bg-card: #15151f;
-  --bg-elevated: #1f1f2e;
+  /* Backgrounds (logo charcoal family) */
+  --bg-primary: #0f1218;
+  --bg-secondary: #151922;
+  --bg-tertiary: #1e2430;
+  --bg-card: #161b25;
+  --bg-elevated: #232b39;
 
-  /* Accents */
-  --accent-primary: #00ff88;
-  --accent-secondary: #00cc6a;
-  --accent-purple: #a855f7;
-  --accent-cyan: #22d3ee;
-  --accent-orange: #ff6b35;
-  --accent-red: #ef4444;
-  --accent-yellow: #fbbf24;
+  /* Accents (logo orange family) */
+  --accent-primary: #ff6a00;
+  --accent-secondary: #ff8f1f;
+  --accent-purple: #ff3d00;
+  --accent-cyan: #53d9ff;
+  --accent-orange: #ff6a00;
+  --accent-red: #ff4d30;
+  --accent-yellow: #ffc45a;
 
   /* Text */
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0b0;
-  --text-muted: #606070;
+  --text-primary: #f7f9fc;
+  --text-secondary: #b3bdcd;
+  --text-muted: #697487;
 
   /* Borders */
-  --border-default: #2a2a3a;
-  --border-hover: #3a3a4a;
+  --border-default: #2b3443;
+  --border-hover: #3a4558;
   --border-active: var(--accent-primary);
 
   /* Glows */
-  --glow-green: rgba(0, 255, 136, 0.15);
-  --glow-purple: rgba(168, 85, 247, 0.15);
-  --glow-red: rgba(239, 68, 68, 0.15);
+  --glow-green: rgba(255, 106, 0, 0.25);
+  --glow-purple: rgba(255, 61, 0, 0.2);
+  --glow-red: rgba(255, 77, 48, 0.2);
 }
 
 * {
@@ -48,11 +48,15 @@ html {
 }
 
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Exo 2', sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
+  background-image:
+    radial-gradient(circle at 12% 15%, rgba(255, 106, 0, 0.14), transparent 36%),
+    radial-gradient(circle at 86% 2%, rgba(255, 143, 31, 0.1), transparent 32%),
+    linear-gradient(170deg, #0f1218 0%, #10141c 46%, #0d1117 100%);
 }
 
 /* Custom scrollbar */
@@ -76,7 +80,7 @@ body {
 
 /* Selection */
 ::selection {
-  background: rgba(0, 255, 136, 0.3);
+  background: rgba(255, 106, 0, 0.35);
   color: var(--text-primary);
 }
 
@@ -89,14 +93,23 @@ body {
 /* Utility classes */
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-accent-primary to-accent-cyan bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-accent-secondary via-accent-primary to-accent-purple bg-clip-text text-transparent;
   }
 
   .bg-grid {
     background-image: 
-      linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
-    background-size: 50px 50px;
+      linear-gradient(rgba(255, 143, 31, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 143, 31, 0.06) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.9), transparent 80%);
+    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.9), transparent 80%);
+  }
+
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='%23ffffff' fill-opacity='0.035'%3E%3Ccircle cx='12' cy='15' r='1'/%3E%3Ccircle cx='42' cy='65' r='1'/%3E%3Ccircle cx='92' cy='41' r='1'/%3E%3Ccircle cx='136' cy='33' r='1'/%3E%3Ccircle cx='160' cy='88' r='1'/%3E%3Ccircle cx='24' cy='122' r='1'/%3E%3Ccircle cx='66' cy='156' r='1'/%3E%3Ccircle cx='117' cy='141' r='1'/%3E%3Ccircle cx='150' cy='162' r='1'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 180px 180px;
+    opacity: 0.45;
+    mix-blend-mode: soft-light;
   }
 
   .card-hover {
@@ -105,6 +118,10 @@ body {
 
   .glow-border {
     @apply border border-accent-primary shadow-glow-green;
+  }
+
+  .panel-glass {
+    @apply bg-bg-card/70 backdrop-blur-md border border-white/10;
   }
 }
 

@@ -11,44 +11,44 @@ const config: Config = {
       colors: {
         // Backgrounds
         bg: {
-          primary: '#0a0a0f',
-          secondary: '#12121a',
-          tertiary: '#1a1a25',
-          card: '#15151f',
-          elevated: '#1f1f2e',
+          primary: '#0f1218',
+          secondary: '#151922',
+          tertiary: '#1e2430',
+          card: '#161b25',
+          elevated: '#232b39',
         },
         // Accents
         accent: {
-          primary: '#00ff88',
-          secondary: '#00cc6a',
-          purple: '#a855f7',
-          cyan: '#22d3ee',
-          orange: '#ff6b35',
-          red: '#ef4444',
-          yellow: '#fbbf24',
+          primary: '#ff6a00',
+          secondary: '#ff8f1f',
+          purple: '#ff3d00',
+          cyan: '#53d9ff',
+          orange: '#ff6a00',
+          red: '#ff4d30',
+          yellow: '#ffc45a',
         },
         // Text
         text: {
-          primary: '#ffffff',
-          secondary: '#a0a0b0',
-          muted: '#606070',
+          primary: '#f7f9fc',
+          secondary: '#b3bdcd',
+          muted: '#697487',
         },
         // Borders
         border: {
-          DEFAULT: '#2a2a3a',
-          hover: '#3a3a4a',
-          active: '#00ff88',
+          DEFAULT: '#2b3443',
+          hover: '#3a4558',
+          active: '#ff6a00',
         },
       },
       fontFamily: {
-        display: ['Outfit', 'sans-serif'],
-        mono: ['Space Mono', 'monospace'],
+        display: ['Exo 2', 'sans-serif'],
+        mono: ['Share Tech Mono', 'monospace'],
       },
       boxShadow: {
-        'glow-green': '0 0 40px rgba(0, 255, 136, 0.15)',
-        'glow-green-lg': '0 0 60px rgba(0, 255, 136, 0.25)',
-        'glow-purple': '0 0 40px rgba(168, 85, 247, 0.15)',
-        'glow-red': '0 0 40px rgba(239, 68, 68, 0.15)',
+        'glow-green': '0 0 40px rgba(255, 106, 0, 0.2)',
+        'glow-green-lg': '0 0 65px rgba(255, 106, 0, 0.35)',
+        'glow-purple': '0 0 40px rgba(255, 61, 0, 0.2)',
+        'glow-red': '0 0 40px rgba(255, 77, 48, 0.22)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

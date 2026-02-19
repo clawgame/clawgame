@@ -43,8 +43,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         // Appearance
         appearance: {
           theme: 'dark',
-          accentColor: '#00ff88',
-          logo: '/logo.png',
+          accentColor: '#ff6a00',
+          logo: '/logoclaw.jpg',
           walletChainType: 'solana-only',
         },
         // Login methods

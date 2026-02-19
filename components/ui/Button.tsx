@@ -13,37 +13,36 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, disabled, children, ...props }, ref) => {
     const baseStyles = `
       inline-flex items-center justify-center gap-2
-      font-semibold rounded-lg
-      transition-all duration-200
+      font-semibold rounded-xl border
+      transition-all duration-300
       disabled:opacity-50 disabled:cursor-not-allowed
       focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary
+      active:translate-y-[1px]
     `;
 
     const variants = {
       primary: `
-        bg-accent-primary text-bg-primary
+        border-accent-primary/40 text-white
+        bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary
         shadow-glow-green
-        hover:shadow-glow-green-lg hover:-translate-y-0.5
-        active:translate-y-0
+        hover:shadow-glow-green-lg hover:-translate-y-0.5 hover:brightness-110
       `,
       secondary: `
-        bg-bg-tertiary text-text-primary
-        border border-border
-        hover:border-accent-primary hover:text-accent-primary
+        bg-bg-tertiary/80 text-text-primary
+        border-border
+        hover:border-accent-secondary/60 hover:text-white hover:bg-bg-elevated
       `,
       ghost: `
-        bg-transparent text-text-secondary
-        hover:text-text-primary hover:bg-bg-tertiary
+        bg-transparent text-text-secondary border-transparent
+        hover:text-white hover:bg-bg-tertiary/70 hover:border-border
       `,
       danger: `
-        bg-accent-red/10 text-accent-red
-        border border-accent-red/30
-        hover:bg-accent-red/20
+        bg-accent-red/10 text-accent-red border-accent-red/30
+        hover:bg-accent-red/20 hover:border-accent-red/60
       `,
       success: `
-        bg-accent-primary/10 text-accent-primary
-        border border-accent-primary/30
-        hover:bg-accent-primary/20
+        bg-accent-primary/10 text-accent-secondary border-accent-primary/30
+        hover:bg-accent-primary/20 hover:border-accent-primary/60
       `,
     };
 

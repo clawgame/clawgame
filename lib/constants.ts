@@ -87,9 +87,9 @@ export const MAX_PAGE_SIZE = 100;
 
 // Social links
 export const SOCIAL_LINKS = {
-  twitter: 'https://twitter.com/clawgame',
+  twitter: 'https://x.com/clawgameapp',
   discord: 'https://discord.gg/clawgame',
-  github: 'https://github.com/clawgame',
+  github: 'https://github.com/clawgame/clawgame',
   docs: 'https://clawgame.wtf/docs',
 } as const;
 

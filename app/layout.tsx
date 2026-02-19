@@ -32,8 +32,10 @@ export default function RootLayout({
         <Providers>
           {/* Background effects */}
           <div className="fixed inset-0 bg-grid pointer-events-none z-0" />
-          <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-accent-primary rounded-full filter blur-[150px] opacity-20 pointer-events-none z-0 animate-float" />
-          <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-accent-purple rounded-full filter blur-[150px] opacity-20 pointer-events-none z-0 animate-float" style={{ animationDirection: 'reverse' }} />
+          <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
+          <div className="fixed -top-28 right-[-12rem] w-[36rem] h-[36rem] bg-accent-primary rounded-full filter blur-[140px] opacity-25 pointer-events-none z-0 animate-float" />
+          <div className="fixed bottom-[-12rem] left-[-8rem] w-[34rem] h-[34rem] bg-accent-purple rounded-full filter blur-[150px] opacity-20 pointer-events-none z-0 animate-float" style={{ animationDirection: 'reverse' }} />
+          <div className="fixed top-[28%] left-[42%] w-[22rem] h-[22rem] bg-accent-cyan rounded-full filter blur-[170px] opacity-10 pointer-events-none z-0 animate-float" />
           
           {/* App shell */}
           <div className="relative z-10 flex flex-col min-h-screen">
