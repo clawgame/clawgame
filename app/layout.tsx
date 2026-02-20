@@ -31,11 +31,11 @@ export default function RootLayout({
       <body className="min-h-screen bg-bg-primary text-text-primary antialiased">
         <Providers>
           {/* Background effects */}
-          <div className="fixed inset-0 bg-grid pointer-events-none z-0" />
-          <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
-          <div className="fixed -top-28 right-[-12rem] w-[36rem] h-[36rem] bg-accent-primary rounded-full filter blur-[140px] opacity-25 pointer-events-none z-0 animate-float" />
-          <div className="fixed bottom-[-12rem] left-[-8rem] w-[34rem] h-[34rem] bg-accent-purple rounded-full filter blur-[150px] opacity-20 pointer-events-none z-0 animate-float" style={{ animationDirection: 'reverse' }} />
-          <div className="fixed top-[28%] left-[42%] w-[22rem] h-[22rem] bg-accent-cyan rounded-full filter blur-[170px] opacity-10 pointer-events-none z-0 animate-float" />
+          <div className="fixed inset-0 bg-grid pointer-events-none z-0 opacity-70 sm:opacity-100" />
+          <div className="fixed inset-0 bg-noise pointer-events-none z-0 opacity-35 sm:opacity-45" />
+          <div className="fixed -top-24 right-[-12rem] w-[22rem] h-[22rem] md:w-[36rem] md:h-[36rem] bg-accent-primary rounded-full filter blur-[95px] md:blur-[140px] opacity-20 md:opacity-25 pointer-events-none z-0 motion-safe:animate-float motion-reduce:animate-none" />
+          <div className="hidden md:block fixed bottom-[-12rem] left-[-8rem] w-[30rem] h-[30rem] lg:w-[34rem] lg:h-[34rem] bg-accent-purple rounded-full filter blur-[120px] lg:blur-[150px] opacity-[0.18] lg:opacity-20 pointer-events-none z-0 motion-safe:animate-float motion-reduce:animate-none" style={{ animationDirection: 'reverse' }} />
+          <div className="hidden lg:block fixed top-[28%] left-[42%] w-[22rem] h-[22rem] bg-accent-cyan rounded-full filter blur-[170px] opacity-10 pointer-events-none z-0 motion-safe:animate-float motion-reduce:animate-none" />
           
           {/* App shell */}
           <div className="relative z-10 flex flex-col min-h-screen">

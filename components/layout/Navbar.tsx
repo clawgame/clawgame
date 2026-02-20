@@ -149,7 +149,7 @@ export function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">
       {/* Backdrop blur */}
-      <div className="absolute inset-0 bg-bg-primary/80 backdrop-blur-xl border-b border-border" />
+      <div className="absolute inset-0 bg-bg-primary/80 backdrop-blur-md sm:backdrop-blur-xl border-b border-border" />
       <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-accent-primary/70 to-transparent" />
 
       <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">

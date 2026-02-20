@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useSolanaWallets } from '@privy-io/react-auth/solana';
 import { useUserStore } from '@/stores/userStore';
@@ -23,6 +23,7 @@ export function AuthSync() {
   const { ready, authenticated } = usePrivy();
   const { wallets: solanaWallets, ready: solanaReady } = useSolanaWallets();
   const { setAuthenticated, setWalletAddress, setBalance } = useUserStore();
+  const lastFetchedAddressRef = useRef<string | null>(null);
 
   const fetchBalance = useCallback((address: string) => {
     fetch(`/api/agents?walletAddress=${address}`)
@@ -51,10 +52,12 @@ export function AuthSync() {
 
     if (authenticated) {
       setAuthenticated(true);
+      return;
     } else {
       setAuthenticated(false);
       setWalletAddress(null);
       setBalance(0);
+      lastFetchedAddressRef.current = null;
     }
   }, [ready, authenticated, setAuthenticated, setWalletAddress, setBalance]);
 
@@ -68,10 +71,12 @@ export function AuthSync() {
     );
     const wallet = embeddedWallet || solanaWallets[0];
 
-    if (wallet) {
-      setWalletAddress(wallet.address);
-      fetchBalance(wallet.address);
-    }
+    if (!wallet) return;
+    if (wallet.address === lastFetchedAddressRef.current) return;
+
+    lastFetchedAddressRef.current = wallet.address;
+    setWalletAddress(wallet.address);
+    fetchBalance(wallet.address);
   }, [ready, solanaReady, authenticated, solanaWallets, setWalletAddress, fetchBalance]);
 
   return null;
